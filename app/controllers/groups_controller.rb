@@ -1,9 +1,22 @@
 class GroupsController < ApplicationController
   before_action :set_group, only: [:show, :update, :destroy]
+  before_action :authenticate_user! ,only: [:create,:update,:join]
 
+  def join
+    group = Group.where(code: group_params[:code] )
+    if group.empty?
+      head 401
+    else
+      unless current_user.groups.include? group
+        current_user.groups << group
+      end
+      render json: @group
+
+    end
+  end
   # GET /groups
   def index
-    @groups = Group.all
+    @groups = Group.all.select(:title,:id)
 
     render json: @groups
   end
@@ -15,9 +28,11 @@ class GroupsController < ApplicationController
 
   # POST /groups
   def create
-    @group = Group.new(group_params)
 
-    if @group.save
+    @group = current_user.groups.create(group_params)
+
+    if @group.errors.messages.empty?
+
       render json: @group, status: :created, location: @group
     else
       render json: @group.errors, status: :unprocessable_entity
