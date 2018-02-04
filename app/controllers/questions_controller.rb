@@ -1,9 +1,10 @@
 class QuestionsController < ApplicationController
   before_action :set_question, only: [:show, :update, :destroy]
+  before_action :authenticate_user! ,only: [:create]
 
   # GET /questions
   def index
-    @questions = Question.all
+    @questions = Question.get_all_questions_for_group params[:group_id]
 
     render json: @questions
   end
@@ -14,11 +15,10 @@ class QuestionsController < ApplicationController
   end
 
   # POST /questions
-  def create
-    @question = Question.new(question_params)
-
-    if @question.save
-      render json: @question, status: :created, location: @question
+  def create 
+    @question = current_user.questions.create(question_params)
+    if @question.errors.messages.empty?
+      render json: @question, status: :created
     else
       render json: @question.errors, status: :unprocessable_entity
     end
@@ -46,6 +46,6 @@ class QuestionsController < ApplicationController
 
     # Only allow a trusted parameter "white list" through.
     def question_params
-      params.require(:question).permit(:content, :votes)
+      params.require(:question).permit(:content, :votes,:group_id)
     end
 end
